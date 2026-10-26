@@ -1,2 +1,5 @@
 * text=auto
 *.patch text eol=lf
+
+# Keep generated PDF artifacts out of text diffs and whitespace checks.
+*.pdf binary

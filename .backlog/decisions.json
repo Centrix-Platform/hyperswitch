@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "decisions": {
+    "native_account_topology": {
+      "owner_ticket": "CTX-002",
+      "status": "pending",
+      "value": null,
+      "allowed_values": ["profile-backed", "platform-connected"],
+      "evidence": [],
+      "description": "Choose one native account topology with complete canonical merchant ownership and vault consequences."
+    },
+    "pilot_terminal_adapter": {
+      "owner_ticket": "CTX-013",
+      "status": "pending",
+      "value": null,
+      "allowed_values": ["CTX-085", "CTX-086"],
+      "evidence": [],
+      "description": "Choose the exact first terminal/app/acquirer combination; the other adapter remains expansion work."
+    },
+    "authorization_owner": {
+      "owner_ticket": "CTX-013",
+      "status": "pending",
+      "value": null,
+      "allowed_values": ["gateway", "vendor"],
+      "evidence": [],
+      "description": "Declare whether the gateway dispatches authorization or an approved vendor application already executes it. Vendor selection activates CTX-141 before the relevant integration/security/certification gates."
+    },
+    "application_layer_jwe": {
+      "owner_ticket": "CTX-013",
+      "status": "pending",
+      "value": null,
+      "allowed_values": [false, true],
+      "evidence": [],
+      "description": "Record whether the approved first integration requires supplementary JWE. True activates CTX-088 in downstream security/certification/release checks; false preserves approved opaque vendor transport."
+    }
+  }
+}

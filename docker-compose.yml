@@ -9,7 +9,7 @@ networks:
 services:
   ### Dependencies
   prestart-hook:
-    image: docker.io/curlimages/curl-base:latest
+    image: docker.io/curlimages/curl-base@sha256:7c4b3fe0219e1cf673ec92274a34bbc0152a2ccd7e30398568e103f9ff4205d4
     container_name: prestart-hook
     environment:
       - ONE_CLICK_SETUP=${ONE_CLICK_SETUP:-false}
@@ -25,7 +25,7 @@ services:
       - router_net
 
   pg:
-    image: docker.io/postgres:latest
+    image: docker.io/postgres@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
     ports:
       - "5432:5432"
     networks:
@@ -44,7 +44,7 @@ services:
       timeout: 5s
 
   redis-standalone:
-    image: docker.io/redis:7
+    image: docker.io/redis@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
     networks:
       - router_net
     ports:
@@ -57,7 +57,7 @@ services:
       timeout: 5s
 
   migration_runner:
-    image: docker.io/debian:trixie-slim
+    image: docker.io/debian@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad
     pull_policy: always
     command: >
       bash -c "
@@ -67,7 +67,8 @@ services:
         curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
       fi &&
       export PATH="$${PATH}:$${HOME}/.cargo/bin" &&
-      just migrate"
+      sed '/^patch_file=/d' /app/diesel.toml > /tmp/diesel.toml &&
+      diesel migration --database-url "$${DATABASE_URL}" run --migration-dir /app/migrations --config-file /tmp/diesel.toml"
     working_dir: /app
     networks:
       - router_net
@@ -78,7 +79,7 @@ services:
       - DATABASE_URL=postgresql://db_user:db_pass@pg:5432/hyperswitch_db
 
   superposition:
-    image: ghcr.io/juspay/superposition-demo:0.113.0
+    image: ghcr.io/juspay/superposition-demo@sha256:51f3a310016879b7419ab64e6b6dbc81c739cdf5985f8f4cc19ba6f9384b2c6d
     ports:
       - "8081:8080"
     networks:
@@ -91,7 +92,7 @@ services:
         condition: service_healthy
 
   superposition-init:
-    image: alpine:latest
+    image: alpine@sha256:71e9b7bae160ba167fa17414401b94cbcdaf3c32feeab9298bd794a2a0614c35
     depends_on:
       superposition:
         condition: service_started
@@ -105,11 +106,11 @@ services:
       - SEED_FILE=/seed.toml
       - WORKSPACE_ID=dev
       - ORG_ID=localorg
-    command: sh -c "apk add --no-cache curl jq yq && sh /seed_superposition.sh"
+    command: sh -c "apk add --no-cache bash curl jq yq && bash /seed_superposition.sh"
     restart: "no"
 
   mailhog:
-    image: docker.io/mailhog/mailhog
+    image: docker.io/mailhog/mailhog@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
     networks:
       - router_net
     profiles:
@@ -120,7 +121,7 @@ services:
 
   ### Application services
   hyperswitch-server:
-    image: docker.juspay.io/juspaydotin/hyperswitch-router:standalone
+    image: docker.juspay.io/juspaydotin/hyperswitch-router@sha256:2fc7df76116074426685caed60e212839bc0b21fa708461b9f53978cf27151e4
     pull_policy: always
     command: /local/bin/router -f /local/config/docker_compose.toml
     ports:
@@ -149,7 +150,7 @@ services:
       timeout: 5s
 
   hyperswitch-producer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-producer:standalone
+    image: docker.juspay.io/juspaydotin/hyperswitch-producer@sha256:3e6d7243aa9594b7fb9c04a0c32099940d67e6d0f1efebae0039aadce7bd4bab
     pull_policy: always
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -167,7 +168,7 @@ services:
       logs: "promtail"
 
   hyperswitch-consumer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-consumer:standalone
+    image: docker.juspay.io/juspaydotin/hyperswitch-consumer@sha256:90a0c8210ffe2701a74c11a8144cee24a7eddfe34da099129f8b043d24d7270b
     pull_policy: always
     command: /local/bin/scheduler -f /local/config/docker_compose.toml
     networks:
@@ -191,7 +192,7 @@ services:
       timeout: 10s
 
   hyperswitch-drainer:
-    image: docker.juspay.io/juspaydotin/hyperswitch-drainer:standalone
+    image: docker.juspay.io/juspaydotin/hyperswitch-drainer@sha256:df9a4963778f43b6c9300ad62dff867ad8f9557ea5d508332858f41e94f1a698
     pull_policy: always
     command: /local/bin/drainer -f /local/config/docker_compose.toml
     deploy:
@@ -211,7 +212,7 @@ services:
 
   ### Web Client
   hyperswitch-web:
-    image: docker.juspay.io/juspaydotin/hyperswitch-web:latest
+    image: docker.juspay.io/juspaydotin/hyperswitch-web@sha256:d733a5c1f7e1e35272e88ec2a53d206f8b7ee643b48da4e162e7f8b5ab353c45
     pull_policy: always
     ports:
       - "9050:9050"
@@ -230,7 +231,7 @@ services:
 
   ### Control Center
   hyperswitch-control-center:
-    image: docker.juspay.io/juspaydotin/hyperswitch-control-center:latest
+    image: docker.juspay.io/juspaydotin/hyperswitch-control-center@sha256:09f15c92903f8c749dd45a2818b16eeffe10ea99c6c6ed6af4b9e0580df02090
     pull_policy: always
     ports:
       - "9000:9000"
@@ -249,7 +250,7 @@ services:
       logs: "promtail"
 
   create-default-user:
-    image: docker.io/curlimages/curl-base:latest
+    image: docker.io/curlimages/curl-base@sha256:7c4b3fe0219e1cf673ec92274a34bbc0152a2ccd7e30398568e103f9ff4205d4
     container_name: create-default-user
     depends_on:
       hyperswitch-server:
@@ -271,7 +272,7 @@ services:
       - router_net
 
   poststart-hook:
-    image: docker.io/curlimages/curl-base:latest
+    image: docker.io/curlimages/curl-base@sha256:7c4b3fe0219e1cf673ec92274a34bbc0152a2ccd7e30398568e103f9ff4205d4
     container_name: poststart-hook
     depends_on:
       hyperswitch-server:
@@ -291,7 +292,7 @@ services:
 
   ### Clustered Redis setup
   redis-cluster:
-    image: docker.io/redis:7
+    image: docker.io/redis@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
     deploy:
       replicas: ${REDIS_CLUSTER_COUNT:-3}
     command: redis-server /usr/local/etc/redis/redis.conf
@@ -306,7 +307,7 @@ services:
       - "16379"
 
   redis-init:
-    image: docker.io/redis:7
+    image: docker.io/redis@sha256:44960b3100c48159a66d28c18b0588c193492e25f7551d60e51dd464fc3eca5b
     profiles:
       - clustered_redis
     depends_on:
@@ -332,7 +333,7 @@ services:
       '
   ### Monitoring
   grafana:
-    image: docker.io/grafana/grafana:latest
+    image: docker.io/grafana/grafana@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
     ports:
       - "3000:3000"
     networks:
@@ -349,7 +350,7 @@ services:
       - ./config/grafana-datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yml
 
   loki:
-    image: docker.io/grafana/loki:latest
+    image: docker.io/grafana/loki@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28
     ports:
       - "3100"
     command: -config.file=/etc/loki/loki.yaml
@@ -361,7 +362,7 @@ services:
       - ./config:/etc/loki
 
   otel-collector:
-    image: docker.io/otel/opentelemetry-collector-contrib:latest
+    image: docker.io/otel/opentelemetry-collector-contrib@sha256:7f22d2a6748110ffb6a59bc0df448bccbf501cdb667d610ede4c61d3863d5849
     command: --config=/etc/otel-collector.yaml
     networks:
       - router_net
@@ -375,7 +376,7 @@ services:
       - "8889"
 
   prometheus:
-    image: docker.io/prom/prometheus:latest
+    image: docker.io/prom/prometheus@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
     networks:
       - router_net
     profiles:
@@ -387,7 +388,7 @@ services:
     restart: unless-stopped
 
   tempo:
-    image: docker.io/grafana/tempo:latest
+    image: docker.io/grafana/tempo@sha256:1ce31d6d7ffab62189685e8c47881d4a561c5d38bd0dbd66e40ca83cef07923d
     command: -config.file=/etc/tempo.yaml
     volumes:
       - ./config/tempo.yaml:/etc/tempo.yaml
@@ -401,7 +402,7 @@ services:
     restart: unless-stopped
 
   redis-insight:
-    image: docker.io/redislabs/redisinsight:latest
+    image: docker.io/redislabs/redisinsight@sha256:b5e19ee240abef6edb435871b90ff8a210995422e8e018ab61c0339d318a1f84
     networks:
       - router_net
     profiles:
@@ -412,7 +413,7 @@ services:
       - redisinsight_store:/db
 
   kafka0:
-    image: docker.io/confluentinc/cp-kafka:7.0.5
+    image: docker.io/confluentinc/cp-kafka@sha256:3b6ee9e219e6bcb61969ddaadbd01a4fa2af6d713cc81dfc575faabe46b944bf
     hostname: kafka0
     networks:
       - router_net
@@ -446,7 +447,7 @@ services:
 
   # Kafka UI for debugging kafka queues
   kafka-ui:
-    image: docker.io/provectuslabs/kafka-ui:latest
+    image: docker.io/provectuslabs/kafka-ui@sha256:8f2ff02d64b0a7a2b71b6b3b3148b85f66d00ec20ad40c30bdcd415d46d31818
     ports:
       - 8090:8080
     networks:
@@ -461,7 +462,7 @@ services:
       KAFKA_CLUSTERS_0_JMXPORT: 9997
 
   clickhouse-server:
-    image: docker.io/clickhouse/clickhouse-server:24.3
+    image: docker.io/clickhouse/clickhouse-server@sha256:85b97f63dcfff47790d26bb5d5801637aaddb2b93e5e9aee27a686c2fb2b9916
     networks:
       - router_net
     ports:
@@ -479,7 +480,7 @@ services:
         hard: 262144
 
   opensearch:
-    image: docker.io/opensearchproject/opensearch:2
+    image: docker.io/opensearchproject/opensearch@sha256:1f81bb6a552637d6f551baeb8d8fad5ed969a0577374e76af14d1131ab750cd9
     container_name: opensearch
     hostname: opensearch
     environment:
@@ -494,7 +495,7 @@ services:
       - router_net
 
   opensearch-dashboards:
-    image: docker.io/opensearchproject/opensearch-dashboards:2
+    image: docker.io/opensearchproject/opensearch-dashboards@sha256:b72019bfa5ecb53e74356fef30a44d45e8fc343a265d27a432857eeb25a48a5c
     ports:
       - 5601:5601
     profiles:
@@ -505,7 +506,7 @@ services:
       - router_net
 
   vector:
-    image: docker.io/timberio/vector:latest-debian
+    image: docker.io/timberio/vector@sha256:63caa7867339c8964043256191e5aa3d40f13b8be1e677aa5f29bb706ca9101f
     ports:
       - "8686"
       - "9598"
@@ -521,7 +522,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   hyperswitch-demo:
-    image: docker.juspay.io/juspaydotin/hyperswitch-react-demo-app:latest
+    image: docker.juspay.io/juspaydotin/hyperswitch-react-demo-app@sha256:b290a921ce1e7e6e3c6c2e3e86fc2d555b9834ceb659971c6a1c9d9ece476374
     pull_policy: always
     ports:
       - "9060:9060"
